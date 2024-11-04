@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto")
 const userSchema = new mongoose.Schema({
+    googleId: {
+        type: String,
+        required: true,
+      },
     firstname: {
         type: String,
         required: true,
@@ -55,6 +60,9 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre("save", async function(next){
+    if(!this.isModified("password")){
+        next();
+    }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
@@ -64,6 +72,19 @@ userSchema.pre("save", async function(next){
 userSchema.methods.isPasswordMatched = async function (enterpassword) {
     return await bcrypt.compare(enterpassword,this.password)
 
+};
+
+
+
+userSchema.methods.createPasswordResetToken = async function (){
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    this.passwordResetToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+    this.passwordResetExpires = Date.now() + 30 * 60 * 1000;  //10 minutes
+
+    return resetToken;
 }
 
 // Create the model
