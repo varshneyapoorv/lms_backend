@@ -9,7 +9,9 @@ const passport = require('passport');
 const MongoStore = require("connect-mongo");
 const mongoose = require('mongoose')
 const googleRouter = require("./routes/googleRoutes");
-const passportSetup = require("./utils/passport")
+const passportSetup = require("./utils/passport");
+const { tutCatRouter } = require("./routes/tutCatRoutes");
+const cookieParser = require("cookie-parser");
 
 
 const app = express();
@@ -37,6 +39,7 @@ app.use(passport.session());
 
 
 app.use(bodyParser.json());
+app.use(cookieParser());
 // Middleware to parse JSON request bodies
 app.use(express.json());
 app.use(bodyParser.urlencoded({extended:false}));
@@ -49,11 +52,13 @@ app.get ("/", (req,res)=>{
 // ROUTES   
 app.use("/api/user", userRouter)
 app.use("/", googleRouter);
+app.use("/api/tutorial/category", tutCatRouter)
 
 
 // middlewaRE
 app.use(notFound);
 app.use(handleError);
+
 
 
 

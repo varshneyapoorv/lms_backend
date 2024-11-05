@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto")
+const JWT = require("jsonwebtoken")
 const userSchema = new mongoose.Schema({
     googleId: {
         type: String,
@@ -90,6 +91,10 @@ userSchema.methods.isPasswordMatched = async function (enterpassword) {
 };
 
 
+// jwt token
+userSchema.methods.generateToken = function(){
+    return JWT.sign({_id: this._id}, process.env.JWT_SECRET, {expiresIn: '6d'})
+}
 
 userSchema.methods.createPasswordResetToken = async function (){
     const resetToken = crypto.randomBytes(32).toString("hex");

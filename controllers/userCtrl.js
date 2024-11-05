@@ -1,4 +1,6 @@
 const { generateToken } = require("../config/jwtToken");
+const JWT = require("jsonwebtoken")
+
 const validateMongodbId = require("../config/validateMongoDbId");
 const bcrypt = require('bcrypt');
 const crypto = require("crypto");
@@ -44,26 +46,83 @@ const registerAUser = asyncHandler(async (req, res) => {
 
 
 // login a user
-const loginUser = asyncHandler(async(req,res)=>{
-    const {email,password} = req.body;
-    // check if user exists or not
-    const findUser = await User.findOne({email:email});
-    if(findUser && (await findUser.isPasswordMatched(password))){
-        res.status(200).json({
-            status : true,
-            message : "Logged In Successfully!",
-            token : generateToken(findUser?.id),
-            role : findUser?.roles,
-            username : findUser?.firstname + " " + findUser?.lastname,
-            user_image : findUser?.user_image,
+const loginUser = asyncHandler( async(req,res)=>{
+    try{
+        const {email,password}= req.body
+        // validation
+        if(!email || !password){
+            return res.status(500).send({
+                success:"false",
+                message:"please add email or password"
+            })
+        }
+        // check user
+        const user = await User.findOne({email})
+        // user validation
+        if(!user){
+            return res.status(404).send({
+                success:false,
+                message:'user not found'
+            })
+        }
+        // check pass
+        const isMatch = await user.isPasswordMatched(password)
+
+        // validation pass
+        if(!isMatch){
+            return res.status(401).send({
+                success:false,
+                message:"invalid credentials"
+            })
+        }
+        // token
+        const token = JWT.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+        res.status(200)
+        .cookie("token", token,{    
+            expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),  
+            secure: process.env.NODE_ENV !== "development",
+                // httpOnly: process.env.NODE_ENV !== "development",
+                httpOnly: true, // Makes the cookie inaccessible to JavaScript
+                sameSite: process.env.NODE_ENV !== "development",
         })
-    }else{
-        throw new Error("Invalid Credentials");
+        .send({
+            success:true,
+            message: "Login Successfully",
+            token,
+            user,
+        })
+    }catch(error){
+        console.log(error);
+        res.status(500).send({
+            success:"false",
+            message:"error in login Api",
+            error:error.message,
+        })
+    }
+})
+
+const logOutUser = asyncHandler(async(req,res)=>{
+    try{
+        res.status(200).clearCookie("token", {
+            httpOnly: true, // Prevent access from JavaScript
+            secure: process.env.NODE_ENV === "production", // Only send secure cookies in production
+            sameSite: "Strict", // Prevent CSRF in production
+        }).send({
+            success: true,
+            message: "logout successfully"
+        })
+    }catch(error){
+        console.error(error);
+        res.status(500).send({
+            success: false,
+            message : "error in logout api",
+            error : error.message,
+        })
     }
 })
 
 
-// get all user
 const getAllUser = asyncHandler(async (req,res)=>{
     try {
         const allUser = await User.find();
@@ -277,6 +336,7 @@ const resetPassword = asyncHandler(async (req,res)=>{
 module.exports = { 
     registerAUser,
     loginUser,
+    logOutUser,
     getAllUser,
     getAUser,
     updateUser,
