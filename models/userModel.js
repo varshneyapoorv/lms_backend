@@ -4,7 +4,10 @@ const crypto = require("crypto")
 const userSchema = new mongoose.Schema({
     googleId: {
         type: String,
-        required: true,
+        // Only required for Google OAuth users
+        required: function () {
+          return !this.password; // googleId required only if no password (Google user)
+        },
       },
     firstname: {
         type: String,
@@ -27,22 +30,33 @@ const userSchema = new mongoose.Schema({
     },
     mobile: {
         type: String,
-        required: true,
+        // Mobile required only for non-Google users
+        required: function () {
+          return !this.googleId; // mobile required only if googleId is absent (regular user)
+        },
         unique: true,
         index: true,
-        match: [/^\d{10}$/, "Please enter a valid mobile number."]
-    },
-    password : {
-        type : String,
-        required : true,
-    },
+        match: [/^\d{10}$/, "Please enter a valid mobile number."],
+        default: null,
+      },
+      password: {
+        type: String,
+        // Password required only for non-Google users
+        // required: function () {
+        //   return !this.googleId; // password required only if googleId is absent (regular user)
+        // },
+        required : true
+      },
     roles : {
         type : String,
         default : "user",
     },
-    profession : {
-        type : String,
-        required : true,
+     profession: {
+      type: String,
+      // Profession required only for non-Google users
+      required: function () {
+        return !this.googleId; // profession required only if googleId is absent (regular user)
+      },
     },
     isBlocked : {
         type : Boolean,
@@ -66,7 +80,8 @@ userSchema.pre("save", async function(next){
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
-})
+});
+
 
 // for password check
 userSchema.methods.isPasswordMatched = async function (enterpassword) {
