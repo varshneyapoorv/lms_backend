@@ -12,6 +12,7 @@ const googleRouter = require("./routes/googleRoutes");
 const passportSetup = require("./utils/passport");
 const { tutCatRouter } = require("./routes/tutCatRoutes");
 const cookieParser = require("cookie-parser");
+const { tutorialRouter } = require("./routes/tutorialRoutes");
 
 
 const app = express();
@@ -53,6 +54,7 @@ app.get ("/", (req,res)=>{
 app.use("/api/user", userRouter)
 app.use("/", googleRouter);
 app.use("/api/tutorial/category", tutCatRouter)
+app.use("/api/tutorial", tutorialRouter)
 
 
 // middlewaRE

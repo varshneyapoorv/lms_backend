@@ -1,6 +1,8 @@
 const { default: slugify } = require("slugify");
 const TutorialCategory = require("../models/tutCategory");
 const asyncHandler = require("express-async-handler");
+const validateMongodbId = require("../config/validateMongoDbId");
+
 
 
 const postTutorialCategory = asyncHandler (async (req,res)=>{
@@ -50,33 +52,56 @@ const deleteATutCat = asyncHandler(async(req,res)=>{
 
 });
 
-const updateATutCat = asyncHandler(async(req,res)=>{
-    const {id} = req.params;
-    validateMongodbId(id, req.body, {new:true});
-    try {
-       const updateTutCat = await TutorialCategory.findByIdAndUpdate(id);
-       res.status(200).json({
-           status : true,
-           message : "Category Updated",
-           updateATutCat,
-       })
-    } catch (error) {
-       throw new Error(error);
-    }
+const updateATutCat = asyncHandler(async (req, res) => {
+    const { id } = req.params;
 
+    // Validate MongoDB ID
+    validateMongodbId(id);
+
+    try {
+        // If title is provided, generate a slug based on the title
+        if (req.body.title) {
+            req.body.slug = slugify(req.body.title.toLowerCase());
+        }
+
+        // Find and update the tutorial category
+        const updateTutCat = await TutorialCategory.findByIdAndUpdate(id, req.body, { new: true });
+
+        // If no category is found
+        if (!updateTutCat) {
+            return res.status(404).json({
+                status: false,
+                message: "Tutorial Category not found",
+            });
+        }
+
+        // Return the updated category
+        res.status(200).json({
+            status: true,
+            message: "Category Updated",
+            updateTutCat,
+        });
+    } catch (error) {
+        // Catch and handle errors
+        res.status(500).json({
+            status: false,
+            message: error.message,
+        });
+    }
 });
+
 
 
 const getATutCat = asyncHandler(async(req,res)=>{
     const {id} = req.params;
     validateMongodbId(id);
     try {
-       const getTutCat = await TutorialCategory.findById(id);
+        const getTutCat = await TutorialCategory.findById(id);
        res.status(200).json({
-           status : true,
-           message : "Category Updated",
-           getATutCat,
-       })
+        status: true,
+        message: "Category Fetched",
+        getTutCat,
+    });
     } catch (error) {
        throw new Error(error);
     }
