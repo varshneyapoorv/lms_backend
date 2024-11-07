@@ -101,11 +101,29 @@ const deleteTutorial = asyncHandler(async (req,res)=>{
     } catch (error) {
         throw new Error(error)
     }
-})
+});
+
+const allTutorial = asyncHandler(async (req,res)=>{
+    
+    try {
+        const allTut = await Tutorial.find();
+        res.status(200).json({
+            status : true,
+            message : "Tutorial  Fetched",
+            count : allTut.length,
+            allTut,
+        })
+    } catch (error) {
+        throw new Error(error)
+    }
+});
+
+
 
 module.exports = {
     postTutorial,
     getATutorial,
     updateTutorial,
     deleteTutorial,
+    allTutorial
 }
